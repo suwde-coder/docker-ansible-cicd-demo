@@ -56,35 +56,44 @@ docker run -d -p 5000:5000 --name cicd-demo-test cicd-demo-app
 ```
 Çalıştığından emin olmak için tarayıcınızda `http://localhost:5000` adresine gidin. İşiniz bittiğinde container'ı `docker stop cicd-demo-test` ve `docker rm cicd-demo-test` komutlarıyla silebilirsiniz.
 
-## 8. GitHub Secrets Açıklaması
-GitHub Actions'ın Docker Hub'a ve hedef Ubuntu sunucusuna güvenli bir şekilde bağlanabilmesi için deponuzun **Settings > Secrets and variables > Actions** kısmından aşağıdaki değişkenlerin tanımlanması zorunludur:
-- `DOCKER_USER`: Docker Hub kullanıcı adınız.
-- `DOCKER_PASS`: Docker Hub şifreniz veya Personal Access Token (önerilir).
-- `SERVER_IP`: Ansible'ın bağlanıp deploy yapacağı uzak sunucunun Public IP adresi.
-- `SSH_KEY`: Uzak sunucuya bağlantı kurarken kullanılacak olan SSH private key'i (örn. `id_rsa` içeriği).
+## 8. Alibaba Cloud ECS Canlı Sunucu (Production) Kurulumu
+Proje, nihai aşamada bir **Alibaba Cloud ECS** sunucusuna deploy edilecek şekilde yapılandırılmıştır.
 
-## 9. CI/CD Pipeline Açıklaması
+**Sunucu Özellikleri:**
+- **İşletim Sistemi:** Ubuntu 22.04.5 LTS
+- **Kullanıcı:** `root`
+- **Açık IP (Public IP):** `47.236.60.40`
+- **Security Group (Güvenlik Duvarı):** Dışarıdan erişim için ECS yönetim panelinden **Port 22 (SSH)** ve **Port 80 (HTTP)** portları dışarıya açık hale getirilmiştir.
+
+## 9. GitHub Secrets Ayarları
+GitHub Actions'ın Docker Hub'a imaj yükleyip, Alibaba Cloud sunucusuna bağlanarak deploy yapabilmesi için GitHub deponuzda (**Settings > Secrets and variables > Actions**) şu şifrelerin tanımlanması zorunludur:
+- `DOCKER_USER`: Docker Hub kullanıcı adınız.
+- `DOCKER_PASS`: Docker Hub şifreniz.
+- `SERVER_IP`: Alibaba Cloud ECS Public IP adresi (`47.236.60.40`).
+- `SSH_KEY`: Sunucuya `root` olarak bağlanmak için kullanılan özel SSH anahtarının (Private Key) tüm içeriği.
+
+## 10. CI/CD Pipeline Açıklaması
 Pipeline, `.github/workflows/ci-cd.yml` dosyası üzerinden yönetilir. Pipeline'ın temel adımları:
 - **Build ve Push:** Projedeki değişiklikler yakalanır, Docker imajı baştan oluşturulur ve Docker Hub üzerine `DOCKER_USER/myapp:latest` etiketiyle yüklenir.
-- **Sed Değişimleri:** `inventory.ini` ve `deploy.yml` içindeki `YOUR_SERVER_IP` ve `Suwde` gibi geçici metinler, pipeline çalışma anında gerçek "Secrets" değerleriyle otomatik olarak değiştirilir.
+- **Sed Değişimleri:** `inventory.ini` ve `deploy.yml` içindeki `YOUR_SERVER_IP` ve `YOUR_DOCKERHUB_USERNAME` gibi geçici metinler, pipeline çalışma anında gerçek "Secrets" değerleriyle otomatik olarak değiştirilir.
 - **Güvenlik Ayarları:** Uzak sunucu ile bağlantı kurmak için SSH anahtarları oluşturulur ve `known_hosts` dosyası güncellenir.
 
-## 10. Ansible Deploy Süreci
-GitHub Actions üzerinden tetiklenen `ansible/deploy.yml` playbook'u hedef makinede sırasıyla şunları yapar:
+## 11. Ansible Deploy Süreci
+GitHub Actions üzerinden tetiklenen `ansible/deploy.yml` playbook'u hedef Alibaba Cloud makinesinde sırasıyla şunları yapar:
 1. `docker.io` paketi kurulu değilse yükler.
 2. Docker servisinin arka planda çalışır ve aktif (enabled) olduğundan emin olur.
-3. Daha önce çalışan `myapp` adında bir container varsa bunu durdurur ve siler (İdempotency).
+3. Daha önce çalışan `myapp` adında bir container varsa bunu durdurur ve siler.
 4. Docker Hub'dan uygulamanın en güncel (`latest`) imajını çeker.
-5. Yeni container'ı başlatır ve dışarıdan `80` portu (HTTP) üzerinden erişime açar.
+5. Yeni container'ı başlatır ve `80:5000` port yönlendirmesiyle dışarıdan `80` portu üzerinden erişime açar.
 
-## 11. Ekran Görüntüleri
+## 12. Ekran Görüntüleri
 Aşağıdaki alana projeyi çalıştırdıktan sonra alınan ekran görüntüleri eklenebilir:
 
 ![Uygulama Ekran Görüntüsü](placeholder_image_link_here)
-*(Buraya canlı sunucudaki veya yerel ortamdaki uygulamanın ekran görüntüsünü yerleştiriniz)*
+*(Buraya canlı sunucudaki uygulamanın ekran görüntüsünü yerleştiriniz)*
 
 ![GitHub Actions Başarılı Pipeline](placeholder_actions_link_here)
 *(Buraya GitHub Actions'ın başarılı şekilde tamamlandığını gösteren ekran görüntüsünü yerleştiriniz)*
 
-## 12. Sonuç
-Bu proje, yazılımın geliştirme aşamasından sunucuya otomatik olarak dağıtılmasına (deploy) kadar geçen DevOps süreçlerinin temel prensiplerini göstermektedir. Konteyner teknolojisi sayesinde "benim bilgisayarımda çalışıyordu" problemi ortadan kaldırılmış; Ansible ve CI/CD pratikleriyle manuel süreçler otonom hale getirilerek insan hatası payı en aza indirilmiştir.
+## 13. Sonuç
+Bu proje, yazılımın geliştirme aşamasından sunucuya otomatik olarak dağıtılmasına (deploy) kadar geçen DevOps süreçlerinin temel prensiplerini göstermektedir. Konteyner teknolojisi ve CI/CD pratikleri sayesinde manuel süreçler otonom hale getirilmiş ve uygulamanın Alibaba Cloud ECS üzerine kesintisiz bir şekilde aktarılması sağlanmıştır.

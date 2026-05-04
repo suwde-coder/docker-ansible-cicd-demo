@@ -17,7 +17,7 @@
         enabled: yes
 
     - name: Docker Hub'dan en son imajı çek (pull)
-      shell: docker pull Suwde/myapp:latest
+      shell: docker pull YOUR_DOCKERHUB_USERNAME/myapp:latest
 
     - name: Eğer çalışıyorsa eski 'myapp' container'ını durdur
       shell: docker stop myapp
@@ -28,4 +28,4 @@
       ignore_errors: yes
 
     - name: Yeni container'ı çalıştır
-      shell: docker run -d -p 80:5000 --name myapp Suwde/myapp:latest
+      shell: docker run -d --restart unless-stopped -p 80:5000 --name myapp YOUR_DOCKERHUB_USERNAME/myapp:latest

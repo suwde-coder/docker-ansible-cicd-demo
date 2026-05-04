@@ -33,7 +33,7 @@ jobs:
       - name: Konfigürasyon Dosyalarını Hazırlama (sed ile değiştirme)
         run: |
           sed -i "s/YOUR_SERVER_IP/${{ secrets.SERVER_IP }}/g" ansible/inventory.ini
-          sed -i "s/Suwde/${{ secrets.DOCKER_USER }}/g" ansible/deploy.yml
+          sed -i "s/YOUR_DOCKERHUB_USERNAME/${{ secrets.DOCKER_USER }}/g" ansible/deploy.yml
 
       - name: 6. SSH Private Key Ayarlama
         run: |
@@ -46,5 +46,7 @@ jobs:
           ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
 
       - name: 8. Ansible Playbook Çalıştırma
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: 'false'
         run: |
           ansible-playbook -i ansible/inventory.ini ansible/deploy.yml
